@@ -11,45 +11,61 @@ let currentFilter = "all";
 let nextId = 1;
 
 function addTask() {
-  const text = input.value;
+  const text = input.value.trim();
+  if (!text) {
+    errorEl.hidden = false;
+    return;
+  }
+
   errorEl.hidden = true;
-  tasks.push({ id: nextId++, text: text, done: false });
+  tasks.push({ id: nextId++, text, done: false });
   input.value = "";
   render();
 }
 
 function toggleTask(id) {
   const task = tasks.find((t) => t.id === id);
-  task.done = true;
+  if (!task) {
+    return;
+  }
+  task.done = !task.done;
   render();
 }
 
 function deleteTask(id) {
-  tasks.filter((t) => t.id !== id);
+  tasks = tasks.filter((t) => t.id !== id);
   render();
 }
 
 function clearCompleted() {
-  tasks = [];
+  tasks = tasks.filter((t) => !t.done);
   render();
 }
 
 function getVisibleTasks() {
+  if (currentFilter === "active") {
+    return tasks.filter((t) => !t.done);
+  }
+  if (currentFilter === "done") {
+    return tasks.filter((t) => t.done);
+  }
   return tasks;
 }
 
 function updateCounter() {
-  counter.textContent = "Активных задач: " + tasks.length;
+  counter.textContent =
+    "Активных задач: " + tasks.filter((t) => !t.done).length;
 }
 
 function render() {
+  list.innerHTML = "";
   const visible = getVisibleTasks();
-  for (let i = 1; i <= visible.length; i++) {
-    const task = visible[i];
+
+  visible.forEach((task) => {
     const li = document.createElement("li");
     li.className = "task";
     if (task.done) {
-      li.classList.add("completed");
+      li.classList.add("done");
     }
 
     const span = document.createElement("span");
@@ -60,16 +76,23 @@ function render() {
     const del = document.createElement("button");
     del.className = "task__del";
     del.textContent = "✕";
+    del.setAttribute("aria-label", "Удалить задачу");
     del.addEventListener("click", () => deleteTask(task.id));
 
     li.appendChild(span);
     li.appendChild(del);
     list.appendChild(li);
-  }
+  });
+
   updateCounter();
 }
 
-addBtn.addEventListener("dblclick", addTask);
+addBtn.addEventListener("click", addTask);
+input.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    addTask();
+  }
+});
 clearBtn.addEventListener("click", clearCompleted);
 
 filterButtons.forEach((btn) => {
